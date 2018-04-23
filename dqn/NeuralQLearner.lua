@@ -308,6 +308,7 @@ function nql:qLearnMinibatch()
     --increase discount exponentially as we learn, until 0.99
     if self.numSteps%20000 == 0 then
         self.discount = math.min(0.02+0.98*self.discount, 0.99)
+    end
 
     -- use gradients
     self.g:mul(0.95):add(0.05, self.dw)
