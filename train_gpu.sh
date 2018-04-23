@@ -9,7 +9,7 @@ ENV=$1
 FRAMEWORK="neswrap" # Wrapper for the FCEUX Nintendo emulator.
 game_path=$PWD"/roms/"
 env_params="useRGB=true"
-steps=5000000 # Total steps to run the model. 50M for Atari.
+steps=2500000 # Total steps to run the model. 50M for Atari.
 save_freq=100000 # Save every save_freq steps. Save early and often! 125k for Atari.
 
 # PREPROCESSOR OPTIONS
@@ -34,7 +34,7 @@ rescale_r=1 # Rescale rewards to [-1, 1]
 gameOverPenalty=1 # Gives a negative reward upon dying.
 
 # LEARNING OPTIONS
-lr=0.00025 # .00025 for Atari.
+lr=0.0005 # .00025 for Atari.
 learn_start=50000 # Only start learning after this many steps. Should be bigger than bufferSize. Was set to 50k for Atari.
 replay_memory=1000000 # Set small to speed up debugging. 1M is the Atari setting... Big memory object!
 n_replay=4 # Minibatches to learn from each learning step.
@@ -44,9 +44,9 @@ clip_delta=1 # Limit the delta to +/- 1.
 # Q NETWORK OPTIONS
 netfile="\"convnet_nes\""
 target_q=30000 # Steps to replace target nework with the updated one. Atari: 10k. DoubleDQN: 30k
-update_freq=4 # How often do we update the Q network? 
+update_freq=4 # How often do we update the Q network?
 hist_len=4 # Number of trailing frames to input into the Q network. 4 for Atari...
-discount=0.99 # Discount rate given to future rewards.
+discount=0.95 # Discount rate given to future rewards.
 
 # VALIDATION AND EVALUATION
 eval_freq=50000 # Evaluate the model every eval_freq steps by calculating the score per episode for a few games. 250k for Atari.
@@ -64,7 +64,7 @@ seed=1
 # THE UGLY UNDERBELLY
 pool_frms="type="$pool_frms_type",size="$pool_frms_size
 
-agent_params="lr="$lr",ep="$ep",ep_end="$eps_end",ep_endt="$eps_endt",discount="$discount",hist_len="$hist_len",learn_start="$learn_start",replay_memory="$replay_memory",update_freq="$update_freq",n_replay="$n_replay",network="$netfile",preproc="$preproc_net",state_dim="$state_dim",minibatch_size=32,ncols="$ncols",bufferSize=1024,valid_size=1000,target_q="$target_q",clip_delta="$clip_delta"",min_reward="$min_reward",max_reward="$max_reward",rescale_r="$rescale_r",nonEventProb="$nonEventProb" 
+agent_params="lr="$lr",ep="$ep",ep_end="$eps_end",ep_endt="$eps_endt",discount="$discount",hist_len="$hist_len",learn_start="$learn_start",replay_memory="$replay_memory",update_freq="$update_freq",n_replay="$n_replay",network="$netfile",preproc="$preproc_net",state_dim="$state_dim",minibatch_size=32,ncols="$ncols",bufferSize=1024,valid_size=1000,target_q="$target_q",clip_delta="$clip_delta"",min_reward="$min_reward",max_reward="$max_reward",rescale_r="$rescale_r",nonEventProb="$nonEventProb"
 
 args="-framework $FRAMEWORK -game_path $game_path -name $agent_name -env $ENV -env_params $env_params -agent $agent -agent_params $agent_params -steps $steps -eval_freq $eval_freq -eval_steps $eval_steps -prog_freq $prog_freq -save_freq $save_freq -actrep $actrep -gpu $gpu -random_starts $random_starts -pool_frms $pool_frms -seed $seed -threads $num_threads -verbose $verbose -gameOverPenalty $gameOverPenalty" #-network $saved_network"
 

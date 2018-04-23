@@ -181,15 +181,15 @@ function nql:preprocess(rawstate)
      -- Optionally display the preprocessed image...
     if self.verbose > 3 then
       win = image.display({image=input_state:clone():reshape(84, 84), win=win})
-    end                          
-                                
+    end
+
       return input_state
     end
 
     return rawstate
 end
 
--- The idea here is to calculate the predicted ideal actions 
+-- The idea here is to calculate the predicted ideal actions
 -- each state in the minibatch, and to update the network
 -- such that the prediction matches the actual desireable
 -- outcome.
@@ -222,7 +222,7 @@ function nql:getQUpdate(args)
     -- pick the action with the highest value using the *online* network
     -- and then calculate the Q-value of s2 given this action using the *target* network.
     q2_online, best_a = self.network:forward(s2):float():max(2)
-    
+
     -- Get the Q-values for the best actions we identified above, using the *target* network.
     q2_target = target_q_net:forward(s2):float()
     q2_max = torch.FloatTensor(best_a:size())
@@ -247,16 +247,16 @@ function nql:getQUpdate(args)
     delta:add(q2)
 
     -- q = Q(s,a)
-    -- This estimates the value of state s for actions a using the *online* network, 
+    -- This estimates the value of state s for actions a using the *online* network,
     local q_all = self.network:forward(s):float()
     q = torch.FloatTensor(q_all:size(1))
     for i=1,q_all:size(1) do
         q[i] = q_all[i][a[i]]
     end
-    
+
     -- Finally, subtract out the Q(s, a) values.
     delta:add(-1, q)
-  
+
     -- Keep the deltas bounded, if requested.
     if self.clip_delta then
         delta[delta:ge(self.clip_delta)] = self.clip_delta
@@ -296,10 +296,18 @@ function nql:qLearnMinibatch()
     self.dw:add(-self.wc, self.w)
 
     -- compute linearly annealed learning rate
-    local t = math.max(0, self.numSteps - self.learn_start)
-    self.lr = (self.lr_start - self.lr_end) * (self.lr_endt - t)/self.lr_endt +
-                self.lr_end
-    self.lr = math.max(self.lr, self.lr_end)
+    -- local t = math.max(0, self.numSteps - self.learn_start)
+    -- self.lr = (self.lr_start - self.lr_end) * (self.lr_endt - t)/self.lr_endt + self.lr_end
+    -- self.lr = math.max(self.lr, self.lr_end)
+
+    --decrease learning rate exponentially as we learn
+    if self.numSteps%20000 == 0 then
+        self.lr = self.lr*0.98
+    end
+
+    --increase discount exponentially as we learn, until 0.99
+    if self.numSteps%20000 == 0 then
+        self.discount = math.min(0.02+0.98*self.discount, 0.99)
 
     -- use gradients
     self.g:mul(0.95):add(0.05, self.dw)
@@ -334,7 +342,7 @@ function nql:compute_validation_statistics()
     -- This is the average Q value of the target network for the highest-value action.
     -- This ideally should rise with learning and stabalize at a reasonable value...
     self.v_avg = self.q_max * q2_max:mean()
-    
+
     -- This in essence is the difference between the target and current networks' value estimate for Q(s, a).
     -- This should approach zero with time as learning slows...
     self.tderr_avg = delta:clone():abs():mean()
@@ -354,7 +362,7 @@ function nql:perceive(reward, rawstate, terminal, testing, testing_ep)
     if self.min_reward then
         reward = math.max(reward, self.min_reward)
     end
-  
+
     -- Add the preprocessed state and terminal value to the recent state table.
     self.transitions:add_recent_state(state, terminal)
 
@@ -365,20 +373,20 @@ function nql:perceive(reward, rawstate, terminal, testing, testing_ep)
     end
 
     -- Load validation data once we're past the initial phase.
-    -- This is just a sample of experiences. 
+    -- This is just a sample of experiences.
     if self.numSteps == self.learn_start+1 and not testing then
         self:sample_validation_data()
     end
-    
+
     -- Get the hist_len most recent frames...
     -- Dimensions should be (hist_len, width, height).
     curState= self.transitions:get_recent()
-     
+
     -- Add a dimension to make this into a one-entry minibatch
     -- to keep the network happy.
     curState = curState:resize(1, unpack(self.input_dims))
 
-    -- OK use the Q network to select an action based on 
+    -- OK use the Q network to select an action based on
     -- the trailing hist_len frames.
     local actionIndex = 1
     if not terminal then
@@ -425,14 +433,14 @@ function nql:eGreedy(state, testing_ep)
     self.ep = testing_ep or (self.ep_end +
                 math.max(0, (self.ep_start - self.ep_end) * (self.ep_endt -
                 math.max(0, self.numSteps - self.learn_start))/self.ep_endt))
-                
+
     -- Select an action, maybe randomly.
     if torch.uniform() < self.ep then
-    
+
         -- Select a random action, with probability ep.
         return torch.random(1, self.n_actions)
     else
-    
+
         -- Select the action with the highest Q value.
         return self:greedy(state)
     end
@@ -449,10 +457,10 @@ function nql:greedy(state)
     if self.gpu >= 0 then
         state = state:cuda()
     end
-    
+
     -- Feed the state into the current network.
     local q = self.network:forward(state):float():squeeze()
-    
+
     -- Initialize the best Q and best action variables.
     local maxq = q[1]
     local besta = {1}
@@ -462,18 +470,18 @@ function nql:greedy(state)
         if q[a] > maxq then
             besta = { a }
             maxq = q[a]
-            
+
         -- Tie, add a second best action to the list.
         elseif q[a] == maxq then
             besta[#besta+1] = a
         end
     end
-    
+
     -- Keep track of our highest Q value.
     self.bestq = maxq
 
     local r = torch.random(1, #besta)
-    
+
     -- Pick at random from the equally-performing actions.
     self.lastAction = besta[r]
 
@@ -527,10 +535,10 @@ function nql:printRecent()
     print("Saving frame snapshot...")
 
     for i = 1, self.hist_len do
-    
+
       local filename = "Frame" .. self.transitions.histIndices[i] .. ".png"
       image.save(filename, self.transitions.recent_s[self.transitions.histIndices[i]]:resize(self.ncols, self.state_dim^.5, self.state_dim^.5))
       --image.save(filename, self.transitions.recent_s[i]:clone():resize(self.ncols, self.state_dim^.5, self.state_dim^.5))
-      
+
     end
 end
