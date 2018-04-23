@@ -21,32 +21,27 @@ if [[ `which apt-get` == '' ]]; then
 fi
 
 # Install dependencies for Torch:
-sudo apt-get update
-sudo apt-get install -qqy build-essential
-sudo apt-get install -qqy gcc g++
-sudo apt-get install -qqy cmake
-sudo apt-get install -qqy curl
-sudo apt-get install -qqy libreadline-dev
-sudo apt-get install -qqy git-core
-sudo apt-get install -qqy libjpeg-dev
-sudo apt-get install -qqy libpng-dev
-sudo apt-get install -qqy ncurses-dev
-sudo apt-get install -qqy imagemagick
-sudo apt-get install -qqy unzip
-sudo apt-get install -qqy libqt4-dev
-sudo apt-get install -qqy liblua5.1-0-dev
-sudo apt-get install -qqy libgd-dev
-sudo apt-get install -qqy scons
-sudo apt-get install -qqy libgtk2.0-dev
-sudo apt-get install -qqy libsdl-dev
-sudo apt-get update
-
+#sudo apt-get update
+#sudo apt-get install -qqy build-essential
+#sudo apt-get install -qqy gcc g++
+#sudo apt-get install -qqy cmake
+#sudo apt-get install -qqy curl
+#sudo apt-get install -qqy libreadline-dev
+#sudo apt-get install -qqy git-core
+#sudo apt-get install -qqy libjpeg-dev
+#sudo apt-get install -qqy libpng-dev
+#sudo apt-get install -qqy ncurses-dev
+#sudo apt-get install -qqy imagemagick
+#sudo apt-get install -qqy unzip
+#sudo apt-get install -qqy libqt4-dev
+#sudo apt-get install -qqy liblua5.1-0-dev
+#sudo apt-get install -qqy libgd-dev
+#sudo apt-get install -qqy scons
+#sudo apt-get install -qqy libgtk2.0-dev
+#sudo apt-get install -qqy libsdl-dev
+#sudo apt-get update
 
 echo "==> Torch7's dependencies have been installed"
-
-
-
-
 
 # Build and install Torch7
 cd /tmp
@@ -57,7 +52,7 @@ mkdir -p build
 cd build
 git checkout master; git pull
 rm -f CMakeCache.txt
-cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_BUILD_TYPE=Release
+cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_BUILD_TYPE=Release -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-9.0
 RET=$?; if [ $RET -ne 0 ]; then echo "Error. Exiting."; exit $RET; fi
 make
 RET=$?; if [ $RET -ne 0 ]; then echo "Error. Exiting."; exit $RET; fi
@@ -131,10 +126,10 @@ $PREFIX/bin/luarocks make
 RET=$?; if [ $RET -ne 0 ]; then echo "Error. Exiting."; exit $RET; fi
 echo "Lua-GD installation completed"
 
-#echo "Installing GPU dependencies..."
-#$PREFIX/bin/luarocks install cutorch
-#$PREFIX/bin/luarocks install cunn
-#echo "Done trying to install the GPU dependencies."
+echo "Installing GPU dependencies..."
+$PREFIX/bin/luarocks install cutorch
+$PREFIX/bin/luarocks install cunn
+echo "Done trying to install the GPU dependencies."
 
 echo
 echo "All done!"

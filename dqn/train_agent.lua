@@ -166,10 +166,12 @@ while step < opt.steps do
 
             if estep%1000 == 0 then collectgarbage() end
 
-            -- record every reward
-            episode_reward = episode_reward + reward
-            if reward ~= 0 then
-               nrewards = nrewards + 1
+            -- record every reward, except gameover, where score may be resetted
+	    if not terminal then
+            	episode_reward = episode_reward + reward
+            	if reward ~= 0 then
+              	    nrewards = nrewards + 1
+		end
             end
 
             if opt.verbose > 3 and reward ~= 0 then
