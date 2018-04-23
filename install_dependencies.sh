@@ -100,7 +100,7 @@ echo "nngraph installation completed"
 echo "Installing FCEUX_Learning_Environment ... "
 cd /tmp
 rm -rf FCEUX_Learning_Environment
-git clone https://github.com/ehrenbrav/FCEUX_Learning_Environment.git
+git clone https://github.com/lmageste/FCEUX_Learning_Environment.git -b lm
 cd FCEUX_Learning_Environment
 $PREFIX/bin/luarocks make
 RET=$?; if [ $RET -ne 0 ]; then echo "Error. Exiting."; exit $RET; fi
@@ -109,7 +109,7 @@ echo "FCEUX installation completed"
 echo "Installing neswrap ... "
 cd /tmp
 rm -rf neswrap
-git clone https://github.com/ehrenbrav/neswrap.git
+git clone https://github.com/lmageste/neswrap.git -b lm
 cd neswrap
 $PREFIX/bin/luarocks make
 RET=$?; if [ $RET -ne 0 ]; then echo "Error. Exiting."; exit $RET; fi
