@@ -31,14 +31,16 @@ eps_endt=1000000 # This probability decreases over time, presumably as we get be
 max_reward=10000 # Rewards are clipped to this value.
 min_reward=-10000 # Ditto.
 rescale_r=1 # Rescale rewards to [-1, 1]
-gameOverPenalty=1 # Gives a negative reward upon dying.
+gameOverPenalty=0 # Gives a negative reward upon dying.
 
 # LEARNING OPTIONS
 lr=0.0005 # .00025 for Atari.
 learn_start=50000 # Only start learning after this many steps. Should be bigger than bufferSize. Was set to 50k for Atari.
 replay_memory=1000000 # Set small to speed up debugging. 1M is the Atari setting... Big memory object!
 n_replay=4 # Minibatches to learn from each learning step.
+#maybe modify this value for a bigger minibatch. For atari it is 32.
 nonEventProb=nil # Probability of selecting a non-reward-bearing experience.
+#verify on code: exploit vs exploration. Change for sure.
 clip_delta=1 # Limit the delta to +/- 1.
 
 # Q NETWORK OPTIONS
@@ -46,6 +48,7 @@ netfile="\"convnet_nes\""
 target_q=30000 # Steps to replace target nework with the updated one. Atari: 10k. DoubleDQN: 30k
 update_freq=4 # How often do we update the Q network?
 hist_len=4 # Number of trailing frames to input into the Q network. 4 for Atari...
+#find out what does this means in code. Related to action_rep
 discount=0.95 # Discount rate given to future rewards.
 
 # VALIDATION AND EVALUATION
@@ -58,6 +61,7 @@ gpu=0 # Zero means "use the GPU" which is a bit confusing... -1 for CPU.
 num_threads=8
 verbose=3 # 2 is default. 3 turns on debugging messages about what the model is doing.
 random_starts=0 # How many NOOPs to perform at the start of a game (random number up to this value). Shouldn't matter for SMB?
+#change previous values first
 seed=1
 #saved_network="<path-to-t7-file>"
 

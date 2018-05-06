@@ -59,6 +59,12 @@ local print = function(...)
     io.flush()
 end
 
+-- add support for continuing training from preexisting network.
+-- To do so, I believe we just need to add the flag for preexisting network and update the data below to fetch it from there, instead of starting anew
+
+local step = 0 --load from file
+local lr_history = {}
+local discount_history = {}
 local learn_start = agent.learn_start
 local start_time = sys.clock()
 local reward_counts = {}
@@ -68,8 +74,6 @@ local v_history = {}
 local qmax_history = {}
 local td_history = {}
 local reward_history = {}
-local step = 0
-time_history[1] = 0
 
 local total_reward
 local nrewards
@@ -82,16 +86,16 @@ local screen, reward, terminal = game_env:getState()
 local last_step_log_time = sys.clock()
 local win = nil
 while step < opt.steps do
-    step = step + 1 
+    step = step + 1
     local action_index = agent:perceive(reward, screen, terminal)
 
     -- game over? get next game!
     if not terminal then
-    
-        -- Play the selected action in the emulator. 
+
+        -- Play the selected action in the emulator.
         -- Record the resulting screen, reward, and whether this was terminal.
         screen, reward, terminal = game_env:step(game_actions[action_index], true)
-            
+
       -- Spam the console.
       if opt.verbose > 3 and reward ~= 0 then
         print("Reward: " .. reward)
@@ -99,14 +103,14 @@ while step < opt.steps do
     else
       if opt.random_starts > 0 then
           screen, reward, terminal = game_env:nextRandomGame()
-            
+
           -- Spam the console.
           if opt.verbose > 3 then
             print("New random episode.")
           end
       else
           screen, reward, terminal = game_env:newGame()
-            
+
           -- Spam the console.
           if opt.verbose > 3 then
             print("New episode.")
@@ -130,7 +134,7 @@ while step < opt.steps do
         print("Steps: ", step)
         print("Epsilon: ", agent.ep)
         agent:report()
-        
+
         -- Save the hist_len most recent frames.
         if opt.verbose > 3 then
           agent:printRecent()
@@ -141,7 +145,7 @@ while step < opt.steps do
     if step%1000 == 0 then collectgarbage() end
 
     if step % opt.eval_freq == 0 and step > learn_start then
-    
+
         print("***********")
         print("Starting evaluation!")
         print("***********")
@@ -216,9 +220,14 @@ while step < opt.steps do
         reward_counts[ind] = nrewards
         episode_counts[ind] = nepisodes
 
-        time_history[ind+1] = sys.clock() - start_time
+        time_history[ind] = sys.clock() - start_time
 
-        local time_dif = time_history[ind+1] - time_history[ind]
+        discount_history[ind] = agent.discount
+        lr_history[ind] = agent.lr
+
+        local time_dif = time_history[ind]
+        if ind>1 then
+            time_dif = time_dif - time_history[ind-1]
 
         local training_rate = opt.actrep*opt.eval_freq/time_dif
 
@@ -256,6 +265,9 @@ while step < opt.steps do
                                 v_history = v_history,
                                 td_history = td_history,
                                 qmax_history = qmax_history,
+                                discount_history = discount_history,
+                                lr_history = lr_history,
+                                n_steps = step,
                                 arguments=opt})
         if opt.saveNetworkParams then
             local nets = {network=w:clone():float()}
@@ -265,7 +277,7 @@ while step < opt.steps do
             agent.valid_term = s, a, r, s2, term
         agent.w, agent.dw, agent.g, agent.g2, agent.delta, agent.delta2,
             agent.deltas, agent.tmp = w, dw, g, g2, delta, delta2, deltas, tmp
-        print("***********")    
+        print("***********")
         print('Saved:', filename .. '.t7')
         print("***********")
         io.flush()
