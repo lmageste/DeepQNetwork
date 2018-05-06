@@ -228,7 +228,7 @@ while step < opt.steps do
         local time_dif = time_history[ind]
         if ind>1 then
             time_dif = time_dif - time_history[ind-1]
-
+	end
         local training_rate = opt.actrep*opt.eval_freq/time_dif
 
         print(string.format(

@@ -296,20 +296,23 @@ function nql:qLearnMinibatch()
     self.dw:add(-self.wc, self.w)
 
     -- compute linearly annealed learning rate
-    -- local t = math.max(0, self.numSteps - self.learn_start)
-    -- self.lr = (self.lr_start - self.lr_end) * (self.lr_endt - t)/self.lr_endt + self.lr_end
-    -- self.lr = math.max(self.lr, self.lr_end)
+    --local t = math.max(0, self.numSteps - self.learn_start)
+    --self.lr = (self.lr_start - self.lr_end) * (self.lr_endt - t)/self.lr_endt + self.lr_end
+    --self.lr = math.max(self.lr, self.lr_end)
 
     --decrease learning rate exponentially as we learn
-    if self.numSteps%20000 == 0 then
+    if self.numSteps%100000 == 0 then
+	print("discout was: " .. self.discount .. " and lr is: " .. self.lr)
         self.lr = self.lr*0.98
     end
 
     --increase discount exponentially as we learn, until 0.99
-    if self.numSteps%20000 == 0 then
+    if self.numSteps%100000 == 0 then
         self.discount = math.min(0.02+0.98*self.discount, 0.99)
+	print("discout is now: " .. self.discount .. " and lr is: " .. self.lr)
     end
-
+    
+    
     -- use gradients
     self.g:mul(0.95):add(0.05, self.dw)
     self.tmp:cmul(self.dw, self.dw)
