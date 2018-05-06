@@ -3,7 +3,13 @@
 if [ -z "$1" ]
   then echo "Please provide the name of the game, e.g.  ./run_cpu breakout "; exit 0
 fi
+
 ENV=$1
+NETWORK=""
+
+if [ -z "$2" ]
+  then NETWORK=$2
+fi
 
 # FRAMEWORK OPTIONS
 FRAMEWORK="neswrap" # Wrapper for the FCEUX Nintendo emulator.
@@ -63,14 +69,14 @@ verbose=3 # 2 is default. 3 turns on debugging messages about what the model is 
 random_starts=0 # How many NOOPs to perform at the start of a game (random number up to this value). Shouldn't matter for SMB?
 #change previous values first
 seed=1
-#saved_network="<path-to-t7-file>"
+saved_network=$NETWORK
 
 # THE UGLY UNDERBELLY
 pool_frms="type="$pool_frms_type",size="$pool_frms_size
 
 agent_params="lr="$lr",ep="$ep",ep_end="$eps_end",ep_endt="$eps_endt",discount="$discount",hist_len="$hist_len",learn_start="$learn_start",replay_memory="$replay_memory",update_freq="$update_freq",n_replay="$n_replay",network="$netfile",preproc="$preproc_net",state_dim="$state_dim",minibatch_size=32,ncols="$ncols",bufferSize=1024,valid_size=1000,target_q="$target_q",clip_delta="$clip_delta"",min_reward="$min_reward",max_reward="$max_reward",rescale_r="$rescale_r",nonEventProb="$nonEventProb"
 
-args="-framework $FRAMEWORK -game_path $game_path -name $agent_name -env $ENV -env_params $env_params -agent $agent -agent_params $agent_params -steps $steps -eval_freq $eval_freq -eval_steps $eval_steps -prog_freq $prog_freq -save_freq $save_freq -actrep $actrep -gpu $gpu -random_starts $random_starts -pool_frms $pool_frms -seed $seed -threads $num_threads -verbose $verbose -gameOverPenalty $gameOverPenalty" #-network $saved_network"
+args="-framework $FRAMEWORK -game_path $game_path -name $agent_name -env $ENV -env_params $env_params -agent $agent -agent_params $agent_params -steps $steps -eval_freq $eval_freq -eval_steps $eval_steps -prog_freq $prog_freq -save_freq $save_freq -actrep $actrep -gpu $gpu -random_starts $random_starts -pool_frms $pool_frms -seed $seed -threads $num_threads -verbose $verbose -gameOverPenalty $gameOverPenalty -network $saved_network"
 
 # Copy stdout and stderr to a logfile.
 LOGFILE="logs/dqn_log_`/bin/date +\"%F:%R\"`"

@@ -62,18 +62,24 @@ end
 -- add support for continuing training from preexisting network.
 -- To do so, I believe we just need to add the flag for preexisting network and update the data below to fetch it from there, instead of starting anew
 
-local step = 0 --load from file
-local lr_history = {}
-local discount_history = {}
+local step = agent.network.n_steps or 0 --load from file
+local lr_history = agent.network.lr_history or {}
+if #lr_history>0 then
+    agent.lr = lr_history[#lr_history]
+end
+local discount_history = agent.network.discount or {}
+if #discount_history>0 then
+    agent.discount = discount_history[#discount_history]
+end
 local learn_start = agent.learn_start
 local start_time = sys.clock()
-local reward_counts = {}
-local episode_counts = {}
-local time_history = {}
-local v_history = {}
-local qmax_history = {}
-local td_history = {}
-local reward_history = {}
+local reward_counts = agent.network.reward_counts or {}
+local episode_counts = agent.network.episode_count or {}
+local time_history = agent.network.time_history or {}
+local v_history = agent.network.v_history or {}
+local qmax_history = agent.network.qmax_history or {}
+local td_history = agent.network.td_history or {}
+local reward_history = agent.network.reward_history or {}
 
 local total_reward
 local nrewards
@@ -228,6 +234,7 @@ while step < opt.steps do
         local time_dif = time_history[ind]
         if ind>1 then
             time_dif = time_dif - time_history[ind-1]
+        end
 
         local training_rate = opt.actrep*opt.eval_freq/time_dif
 
