@@ -10,9 +10,9 @@ local trans = torch.class('dqn.TransitionTable')
 
 
 function trans:__init(args)
-    self.stateDim = args.stateDim
-    self.numActions = args.numActions
-    self.histLen = args.histLen
+    self.stateDim = args.stateDim or 1
+    self.numActions = args.numActions or 1
+    self.histLen = args.histLen or 1
     self.maxSize = args.maxSize or 1024^2
     self.bufferSize = args.bufferSize or 1024
     self.histType = args.histType or "linear"
@@ -20,7 +20,7 @@ function trans:__init(args)
     self.zeroFrames = args.zeroFrames or 1
     self.nonTermProb = args.nonTermProb or 1
     self.nonEventProb = args.nonEventProb or 1
-    self.gpu = args.gpu
+    self.gpu = args.gpu or 1
     self.numEntries = 0
     self.insertIndex = 0
 
@@ -164,6 +164,7 @@ function trans:sample(batch_size)
     assert(batch_size < self.bufferSize)
 
     if not self.buf_ind or self.buf_ind + batch_size - 1 > self.bufferSize then
+	--error("size is:" .. self:size()  .. "batch_size is: " .. batch_size .. "bufferSize is " .. self.bufferSize)
         self:fill_buffer()
     end
 
@@ -178,7 +179,7 @@ function trans:sample(batch_size)
         buf_s = self.gpu_s
         buf_s2 = self.gpu_s2
     end
-
+    --error("sizes are: " .. buf_s[range] .. ", " .. buf_a[range] .. ", " .. buf_r[range] .. ", " .. buf_s2[range])
     return buf_s[range], buf_a[range], buf_r[range], buf_s2[range], buf_term[range]
 end
 
@@ -351,6 +352,21 @@ function trans:write(file)
                       self.insertIndex,
                       self.recentMemSize,
                       self.histIndices})
+	--self.s,
+        --self.a,
+        --self.r,
+        --self.t,
+        --self.action_encodings,
+        --self.recent_s,
+        --self.recent_a,
+        --self.recent_t,
+        --self.buf_a,
+        --self.buf_r,
+        --self.buf_term,
+        --self.buf_s,
+        --self.buf_s2,
+        --self.gpu_s,
+        --self.gpu_s2})
 end
 
 
@@ -361,7 +377,7 @@ Recreates an empty table.
 @param file (FILE object ) @see torch.DiskFile
 --]]
 function trans:read(file)
-    local stateDim, numActions, histLen, maxSize, bufferSize, numEntries, insertIndex, recentMemSize, histIndices = unpack(file:readObject())
+    local stateDim, numActions, histLen, maxSize, bufferSize, numEntries, insertIndex, recentMemSize, histIndices, s, a, r, t, action_encodings, recent_s, recent_a, recent_t, buf_a, buf_r, buf_term, buf_s, buf_s2, gpu_s, gpu_s2 = unpack(file:readObject())
     self.stateDim = stateDim
     self.numActions = numActions
     self.histLen = histLen
@@ -369,21 +385,36 @@ function trans:read(file)
     self.bufferSize = bufferSize
     self.recentMemSize = recentMemSize
     self.histIndices = histIndices
+    --self.numEntries = numEntries
+    --self.insertIndex = insertIndex
     self.numEntries = 0
     self.insertIndex = 0
 
+    --self.s = s
+    --self.a = a
+    --self.r = r
+    --self.t = t
+    --self.action_encodings = action_encodings
     self.s = torch.ByteTensor(self.maxSize, self.stateDim):fill(0)
     self.a = torch.LongTensor(self.maxSize):fill(0)
     self.r = torch.zeros(self.maxSize)
     self.t = torch.ByteTensor(self.maxSize):fill(0)
     self.action_encodings = torch.eye(self.numActions)
 
+    --self.recent_s = recent_s
+    --self.recent_a = recent_a
+    --self.recent_t = recent_t
     -- Tables for storing the last histLen states.  They are used for
     -- constructing the most recent agent state more easily.
     self.recent_s = {}
     self.recent_a = {}
     self.recent_t = {}
 
+    --self.buf_a = buf_a
+    --self.buf_r = buf_r
+    --self.buf_term = buf_term
+    --self.buf_s = buf_s
+    --self.buf_s2 = buf_s2
     self.buf_a      = torch.LongTensor(self.bufferSize):fill(0)
     self.buf_r      = torch.zeros(self.bufferSize)
     self.buf_term   = torch.ByteTensor(self.bufferSize):fill(0)
@@ -391,6 +422,8 @@ function trans:read(file)
     self.buf_s2     = torch.ByteTensor(self.bufferSize, self.stateDim * self.histLen):fill(0)
 
     if self.gpu and self.gpu >= 0 then
+	--self.gpu_s = gpu_s
+	--self.gpu_s2 = gpu_s2
         self.gpu_s  = self.buf_s:float():cuda()
         self.gpu_s2 = self.buf_s2:float():cuda()
     end

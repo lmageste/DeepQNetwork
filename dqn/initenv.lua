@@ -130,7 +130,37 @@ function setup(_opt)
         _opt.agent_params.state_dim = gameEnv:nObsFeature()
     end
 
-    local agent = dqn[_opt.agent](_opt.agent_params)
+    local agent
+    local msg, err = pcall(require, _opt.agent_params.network)
+    if not msg then
+        -- try to load saved agent
+        local err_msg, exp = pcall(torch.load, _opt.agent_params.network)
+        if not err_msg then
+            error("Could not find network file. Error: " .. err_msg)
+        end
+        agent = exp.agent 
+	file = torch.DiskFile(_opt.agent_params.network .. ".transitions", "r")
+	dummyArg = {}
+	agent.transitions = dqn.TransitionTable(dummyArg)
+	agent.transitions:read(file)
+	agent.learn_start = agent.transitions.bufferSize+agent.numSteps
+	--error("buffer size is: " .. agent.transitions.bufferSize .. " and trans size is: " .. agent.transitions:size())
+	if _opt.agent_params.best and exp.best_model then
+            print("Loading best model...")
+            agent.network = exp.best_model
+        else
+            print("Loading the latest (not necessarily the best) model...")
+            agent.network = exp.model
+	agent.w, agent.dw = agent.network:getParameters()
+        agent.dw:zero()
+	agent.deltas = agent.dw:clone():fill(0)
+	agent.tmp= agent.dw:clone():fill(0)
+	agent.g  = agent.dw:clone():fill(0)
+	agent.g2 = agent.dw:clone():fill(0)
+        end
+    else
+    	agent = dqn[_opt.agent](_opt.agent_params)
+    end
 
     if opt.verbose >= 1 then
         print('Set up Torch using these options:')

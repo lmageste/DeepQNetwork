@@ -3,13 +3,15 @@
 if [ -z "$1" ]
   then echo "Please provide the name of the game, e.g.  ./run_cpu breakout "; exit 0
 fi
+
 ENV=$1
+NETWORK=$2
 
 # FRAMEWORK OPTIONS
 FRAMEWORK="neswrap" # Wrapper for the FCEUX Nintendo emulator.
 game_path=$PWD"/roms/"
 env_params="useRGB=true"
-steps=2500000 # Total steps to run the model. 50M for Atari.
+steps=50000000 # Total steps to run the model. 50M for Atari.
 save_freq=100000 # Save every save_freq steps. Save early and often! 125k for Atari.
 
 # PREPROCESSOR OPTIONS
@@ -37,7 +39,7 @@ gameOverPenalty=0 # Gives a negative reward upon dying.
 lr=0.0005 # .00025 for Atari.
 learn_start=50000 # Only start learning after this many steps. Should be bigger than bufferSize. Was set to 50k for Atari.
 replay_memory=1000000 # Set small to speed up debugging. 1M is the Atari setting... Big memory object!
-n_replay=4 # Minibatches to learn from each learning step.
+n_replay=8 # Minibatches to learn from each learning step.
 #maybe modify this value for a bigger minibatch. For atari it is 32.
 nonEventProb=nil # Probability of selecting a non-reward-bearing experience.
 #verify on code: exploit vs exploration. Change for sure.
@@ -63,15 +65,18 @@ verbose=3 # 2 is default. 3 turns on debugging messages about what the model is 
 random_starts=0 # How many NOOPs to perform at the start of a game (random number up to this value). Shouldn't matter for SMB?
 #change previous values first
 seed=1
-#saved_network="<path-to-t7-file>"
+saved_network=$NETWORK
 
 # THE UGLY UNDERBELLY
 pool_frms="type="$pool_frms_type",size="$pool_frms_size
 
 agent_params="lr="$lr",ep="$ep",ep_end="$eps_end",ep_endt="$eps_endt",discount="$discount",hist_len="$hist_len",learn_start="$learn_start",replay_memory="$replay_memory",update_freq="$update_freq",n_replay="$n_replay",network="$netfile",preproc="$preproc_net",state_dim="$state_dim",minibatch_size=32,ncols="$ncols",bufferSize=1024,valid_size=1000,target_q="$target_q",clip_delta="$clip_delta"",min_reward="$min_reward",max_reward="$max_reward",rescale_r="$rescale_r",nonEventProb="$nonEventProb"
 
-args="-framework $FRAMEWORK -game_path $game_path -name $agent_name -env $ENV -env_params $env_params -agent $agent -agent_params $agent_params -steps $steps -eval_freq $eval_freq -eval_steps $eval_steps -prog_freq $prog_freq -save_freq $save_freq -actrep $actrep -gpu $gpu -random_starts $random_starts -pool_frms $pool_frms -seed $seed -threads $num_threads -verbose $verbose -gameOverPenalty $gameOverPenalty" #-network $saved_network"
-
+args="-framework $FRAMEWORK -game_path $game_path -name $agent_name -env $ENV -env_params $env_params -agent $agent -agent_params $agent_params -steps $steps -eval_freq $eval_freq -eval_steps $eval_steps -prog_freq $prog_freq -save_freq $save_freq -actrep $actrep -gpu $gpu -random_starts $random_starts -pool_frms $pool_frms -seed $seed -threads $num_threads -verbose $verbose -gameOverPenalty $gameOverPenalty"
+if [ $# -eq 2 ]
+then
+    args=$args" -network $saved_network"
+fi
 # Copy stdout and stderr to a logfile.
 LOGFILE="logs/dqn_log_`/bin/date +\"%F:%R\"`"
 exec > >(tee -i ${LOGFILE})

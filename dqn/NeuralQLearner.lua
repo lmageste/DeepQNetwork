@@ -65,6 +65,17 @@ function nql:__init(args)
     self.transition_params = args.transition_params or {}
 
     self.network    = args.network or self:createNetwork()
+    self.saved_parameters = {reward_history = {},
+                            reward_counts = {},
+                            episode_counts = {},
+                            time_history = {},
+                            v_history = {},
+                            td_history = {},
+                            qmax_history = {},
+                            discount_history = {},
+                            lr_history = {},
+                            n_steps = 0
+                        }
 
     -- check whether there is a network file
     local network_function
@@ -134,7 +145,7 @@ function nql:__init(args)
 
     self.transitions = dqn.TransitionTable(transition_args)
 
-    self.numSteps = 0 -- Number of perceived states.
+    self.numSteps = self.saved_parameters.n_steps or 0 -- Number of perceived states.
     self.lastState = nil
     self.lastAction = nil
     self.v_avg = 0 -- V running average.
@@ -301,13 +312,13 @@ function nql:qLearnMinibatch()
     --self.lr = math.max(self.lr, self.lr_end)
 
     --decrease learning rate exponentially as we learn
-    if self.numSteps%100000 == 0 then
+    if self.numSteps%200000 == 0 then
 	print("discout was: " .. self.discount .. " and lr is: " .. self.lr)
         self.lr = self.lr*0.98
     end
 
     --increase discount exponentially as we learn, until 0.99
-    if self.numSteps%100000 == 0 then
+    if self.numSteps%200000 == 0 then
         self.discount = math.min(0.02+0.98*self.discount, 0.99)
 	print("discout is now: " .. self.discount .. " and lr is: " .. self.lr)
     end

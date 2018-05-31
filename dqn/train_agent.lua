@@ -62,18 +62,12 @@ end
 -- add support for continuing training from preexisting network.
 -- To do so, I believe we just need to add the flag for preexisting network and update the data below to fetch it from there, instead of starting anew
 
-local step = 0 --load from file
-local lr_history = {}
-local discount_history = {}
 local learn_start = agent.learn_start
-local start_time = sys.clock()
-local reward_counts = {}
-local episode_counts = {}
-local time_history = {}
-local v_history = {}
-local qmax_history = {}
-local td_history = {}
-local reward_history = {}
+local step = agent.numSteps
+--error("steps and numsteps are: " .. step .. " and " .. agent.numSteps)
+local start_time = sys.clock() - (agent.saved_parameters.time_history[#agent.saved_parameters.time_history] or 0)
+
+--error("transitions size:" .. agent.transitions:size())
 
 local total_reward
 local nrewards
@@ -202,33 +196,33 @@ while step < opt.steps do
         eval_time = sys.clock() - eval_time
         start_time = start_time + eval_time
         agent:compute_validation_statistics()
-        local ind = #reward_history+1
+        local ind = #agent.saved_parameters.time_history+1
         total_reward = total_reward/math.max(1, nepisodes)
 
-        if #reward_history == 0 or total_reward > torch.Tensor(reward_history):max() then
+        if #agent.saved_parameters.reward_history == 0 or total_reward > torch.Tensor(agent.saved_parameters.reward_history):max() then
             agent.best_network = agent.network:clone()
         end
 
         if agent.v_avg then
-            v_history[ind] = agent.v_avg
-            td_history[ind] = agent.tderr_avg
-            qmax_history[ind] = agent.q_max
+            agent.saved_parameters.v_history[ind] = agent.v_avg
+            agent.saved_parameters.td_history[ind] = agent.tderr_avg
+            agent.saved_parameters.qmax_history[ind] = agent.q_max
         end
-        print("V", v_history[ind], "TD error", td_history[ind], "Qmax", qmax_history[ind])
+        print("V", agent.saved_parameters.v_history[ind], "TD error", agent.saved_parameters.td_history[ind], "Qmax", agent.saved_parameters.qmax_history[ind])
 
-        reward_history[ind] = total_reward
-        reward_counts[ind] = nrewards
-        episode_counts[ind] = nepisodes
+        agent.saved_parameters.reward_history[ind] = total_reward
+        agent.saved_parameters.reward_counts[ind] = nrewards
+        agent.saved_parameters.episode_counts[ind] = nepisodes
 
-        time_history[ind] = sys.clock() - start_time
+        agent.saved_parameters.time_history[ind] = sys.clock() - start_time
 
-        discount_history[ind] = agent.discount
-        lr_history[ind] = agent.lr
+        agent.saved_parameters.discount_history[ind] = agent.discount
+        agent.saved_parameters.lr_history[ind] = agent.lr
 
-        local time_dif = time_history[ind]
+        local time_dif = agent.saved_parameters.time_history[ind]
         if ind>1 then
-            time_dif = time_dif - time_history[ind-1]
-	end
+            time_dif = time_dif - agent.saved_parameters.time_history[ind-1]
+        end
         local training_rate = opt.actrep*opt.eval_freq/time_dif
 
         print(string.format(
@@ -255,18 +249,22 @@ while step < opt.steps do
             filename = filename .. "_" .. math.floor(step / opt.save_versions)
         end
         filename = filename
+	transitionsFilename = filename .. ".transitions.t7"
+	file = torch.DiskFile(transitionsFilename, "w")
+	print("trans file name is: " .. transitionsFilename)
+	agent.transitions:write(file)
         torch.save(filename .. ".t7", {agent = agent,
                                 model = agent.network,
                                 best_model = agent.best_network,
-                                reward_history = reward_history,
-                                reward_counts = reward_counts,
-                                episode_counts = episode_counts,
-                                time_history = time_history,
-                                v_history = v_history,
-                                td_history = td_history,
-                                qmax_history = qmax_history,
-                                discount_history = discount_history,
-                                lr_history = lr_history,
+                                reward_history = agent.saved_parameters.reward_history,
+                                reward_counts = agent.saved_parameters.reward_counts,
+                                episode_counts = agent.saved_parameters.episode_counts,
+                                time_history = agent.saved_parameters.time_history,
+                                v_history = agent.saved_parameters.v_history,
+                                td_history = agent.saved_parameters.td_history,
+                                qmax_history = agent.saved_parameters.qmax_history,
+                                discount_history = agent.saved_parameters.discount_history,
+                                lr_history = agent.saved_parameters.lr_history,
                                 n_steps = step,
                                 arguments=opt})
         if opt.saveNetworkParams then
